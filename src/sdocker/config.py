@@ -52,7 +52,7 @@ class ReadConfig():
         if "UserSettings"  in UserProfile_reponse.keys() and "SecurityGroups" in UserProfile_reponse["UserSettings"].keys():
             self.config["SecurityGroups"] = UserProfile_reponse["UserSettings"]["SecurityGroups"] 
         else:
-            self.config["SecurityGroups"] = domain_reponse["DefaultUserSettings"]['SecurityGroups"]
+            self.config["SecurityGroups"] = domain_reponse["DefaultUserSettings"]["SecurityGroups"]
         if "UserSettings" in UserProfile_reponse.keys() and "ExecutionRole" in UserProfile_reponse["UserSettings"]:
             self.config["ExecutionRole"] = UserProfile_reponse["UserSettings"]["ExecutionRole"]
         else:
@@ -64,8 +64,14 @@ class ReadConfig():
         self.config["ImageId"] = config_data["ImageId"]
         self.config["Key"] = config_data["Key"]
         efs_client = boto3.client("efs", region_name=self.config["Region"])
+        self.config["EFSClient"] = efs_client
         Efs_response = efs_client.describe_mount_targets(FileSystemId=self.config["EfsId"])
         self.config["EfsIpAddress"] = Efs_response["MountTargets"][0]["IpAddress"]
         self.config["NetworkInterfaceId"] = Efs_response["MountTargets"][0]["NetworkInterfaceId"]
+        self.config["MountTargetId"] = Efs_response["MountTargets"][0]["MountTargetId"]
+        Mount_target_response = efs_client.describe_mount_target_security_groups(
+            MountTargetId=self.config["MountTargetId"]
+        )
+        self.config["MountTargetSecurityGroups"] = Mount_target_response["SecurityGroups"]
         logging.debug(f"Resource: {self.config}")
         

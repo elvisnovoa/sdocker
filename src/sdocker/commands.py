@@ -31,7 +31,7 @@ class Commands():
         self.args = args
         self.config = config
         
-    def create_sg(self, name, desc, port):
+    def create_sg(self, name, desc, source_sg, from_port, to_port):
         
         sg_exist = False
         logging.info(f"Checking {name} security group exists")
@@ -56,43 +56,19 @@ class Commands():
             )
             rule_response = self.ec2_client.authorize_security_group_ingress(
                 GroupId=response["GroupId"],
-                port=port,
-                protocol="tcp",
-                source_group=self.config["SecurityGroups"][0]
-            )
-            logging.info(f"Security Group id: {response['GroupId']}")
-            sg = response["GroupId"]
-        else:
-            sg = check_response['SecurityGroups'][0]["GroupId"]
-        return sg
-    
-    def create_efs_sg(self):
-        
-        sg_exist = False
-        logging.info("Checking EFSDockerHost security group exists")
-        try:
-            check_response= self.ec2_client.describe_security_groups(
-                GroupNames=["EFSDockerHost"]
-            )
-            sg_exist = True
-            logging.info(f"Found EFSDockerHost security group {check_response['SecurityGroups'][0]['GroupId']}")
-        except botocore.exceptions.ClientError as error:
-            if error.response["Error"]["Code"] == "InvalidGroup.NotFound":
-                sg_exist = False
-            else:
-                raise error
-        if not sg_exist:
-            logging.info("Creating EFSDockerHost security group")
-            response = self.ec2_client.create_security_group(
-                Description="EFS security group used with Docker host",
-                GroupName="DockerHost",
-                VpcId=self.config["VpcId"]
-            )
-            rule_response = self.ec2_client.authorize_security_group_ingress(
-                GroupId=response["GroupId"],
-                port=port,
-                protocol="tcp",
-                source_group=self.config["SecurityGroups"][0]
+                IpPermissions=[
+                    {
+                        "FromPort": from_port,
+                        "IpProtocol": 'tcp',
+                        "ToPort": to_port,
+                        "UserIdGroupPairs": [
+                            {
+                                "Description": desc,
+                                "GroupId": response["GroupId"] if source_sg=="self" else source_sg,
+                            },
+                        ],
+                    },
+                ]
             )
             logging.info(f"Security Group id: {response['GroupId']}")
             sg = response["GroupId"]
@@ -101,26 +77,29 @@ class Commands():
         return sg
     
     def prepare_efs(self, sg):
-        eni_response = self.ec2_client.describe_network_interfaces(describe_network_interfaces=[self.config["NetworkInterfaceId"]])
-        sg_groups = eni_response["NetworkInterfaces"][0]["Groups"]
-        sg_exist = false
-        groups = []
-        for sg_group in sg_groups:
-            groups.append(sg_group["GroupId"])
-            if sg_group["GroupId"] == sg:
-                sg_exist = True
-        if not sg_exist:
-            groups.append(sg)
-            eni_update_response = self.ec2_client.modify_network_interface_attribute(
-                NetworkInterfaceId=self.config["NetworkInterfaceId"],
-                Groups=groups
+        if sg not in self.config["MountTargetSecurityGroups"]:
+            response = self.config["EFSClient"].modify_mount_target_security_groups(
+                MountTargetId=self.config["MountTargetId"],
+                SecurityGroups=[*self.config["MountTargetSecurityGroups"], sg]
             )
 
     def create_host(self):
         
         home = get_home()
-        docker_sg = self.create_sg("DockerHost", "Docker host security group", "0-65535")
-        efs_sg = self.create_sg("EFSDockerHost", "EFS security group used with Docker host", "2049")
+        docker_sg = self.create_sg(
+            "DockerHost",
+            "Docker host security group",
+            self.config["SecurityGroups"][0],
+            0,
+            65535
+        )
+        efs_sg = self.create_sg(
+            "EFSDockerHost",
+            "EFS security group used with Docker host",
+            "self",
+            2049,
+            2049
+        )
         self.prepare_efs(efs_sg)
         bootstrap_script = f"""#!/bin/bash
         set -ex               
