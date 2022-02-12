@@ -49,28 +49,32 @@ class Commands():
                 
         if not sg_exist:
             logging.info(f"Creating {name} security group")
-            response = self.ec2_client.create_security_group(
-                Description=desc,
-                GroupName=name,
-                VpcId=self.config["VpcId"]
-            )
-            rule_response = self.ec2_client.authorize_security_group_ingress(
-                GroupId=response["GroupId"],
-                IpPermissions=[
-                    {
-                        "FromPort": from_port,
-                        "IpProtocol": 'tcp',
-                        "ToPort": to_port,
-                        "UserIdGroupPairs": [
-                            {
-                                "Description": desc,
-                                "GroupId": response["GroupId"] if source_sg=="self" else source_sg,
-                            },
-                        ],
-                    },
-                ]
-            )
-            logging.info(f"Security Group id: {response['GroupId']}")
+            try:
+                response = self.ec2_client.create_security_group(
+                    Description=desc,
+                    GroupName=name,
+                    VpcId=self.config["VpcId"]
+                )
+                rule_response = self.ec2_client.authorize_security_group_ingress(
+                    GroupId=response["GroupId"],
+                    IpPermissions=[
+                        {
+                            "FromPort": from_port,
+                            "IpProtocol": 'tcp',
+                            "ToPort": to_port,
+                            "UserIdGroupPairs": [
+                                {
+                                    "Description": desc,
+                                    "GroupId": response["GroupId"] if source_sg=="self" else source_sg,
+                                },
+                            ],
+                        },
+                    ]
+                )
+                logging.info(f"Security Group id: {response['GroupId']}")
+            except botocore.exceptions.ClientError as error:
+                if error.response["Error"]["Code"] != "InvalidGroup.Duplicate":
+                    raise errorß
             sg = response["GroupId"]
         else:
             sg = check_response['SecurityGroups'][0]["GroupId"]
