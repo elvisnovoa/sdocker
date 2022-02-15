@@ -5,7 +5,7 @@ import requests
 import json
 import time
 import os
-from config import get_home
+from config import get_home, ReadFromFile
 
 port = 1111
 retry_wait = 5
@@ -86,6 +86,18 @@ class Commands():
                 MountTargetId=self.config["MountTargetId"],
                 SecurityGroups=[*self.config["MountTargetSecurityGroups"], sg]
             )
+    
+    def terminate_current_host(self):
+        home = get_home()
+        sdocker_host_filename = f"{home}/.sdocker/sdocker-hosts.conf"
+        sdocker_host_config = ReadFromFile(sdocker_host_filename)
+        response = self.ec2_client.terminate_instances(
+            InstanceIds=[sdocker_host_config["ActiveHosts"][0]["InstanceId"]]
+        )
+        instance_id = sdocker_host_config["ActiveHosts"][0]["InstanceId"]
+        instance_dns = sdocker_host_config["ActiveHosts"][0]["InstanceDns"]
+        print(f"Successfully terminated instance {instance_id} with private DNS {instance_dns}")
+        logging.info(f"Successfully terminated instance {instance_id} with private DNS {instance_dns}")
 
     def create_host(self):
         
@@ -106,37 +118,37 @@ class Commands():
         )
         self.prepare_efs(efs_sg)
         bootstrap_script = f"""#!/bin/bash
-        set -ex               
+        set -ex
+        exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1
         
-        sudo su - ec2-user
-        sudo mkdir -p {home}
-        sudo chown 1000:1000 {home}
-        sudo mount -t nfs \
-            -o nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2 \
-            {self.config['EfsIpAddress']}:/{self.config['UserUid']} \
-            {home}
-            
-        docker run -d -p {port}:2375 -p 8080:8080 -v {home}:{home} --privileged --name dockerd-server -e DOCKER_TLS_CERTDIR="" docker:dind
+            sudo mkdir -p {home}
+            sudo mount -t nfs \
+                -o nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2 \
+                {self.config['EfsIpAddress']}:/{self.config['UserUid']} \
+                {home}
+
+            sudo -u ec2-user docker run -d -p {port}:2375 -p 8080:8080 -v {home}:{home} --privileged --name dockerd-server -e DOCKER_TLS_CERTDIR="" docker:dind
         """
-        
-        response = self.ec2_client.run_instances(
-            ImageId=self.config["ImageId"],
-            InstanceType=self.args.instance_type,
-            KeyName=self.config["Key"],
-            SecurityGroupIds=[docker_sg, efs_sg],
-            SubnetId=self.config["SubnetIds"][0],
-            MinCount=1,
-            MaxCount=1,
-            UserData=bootstrap_script,
-            BlockDeviceMappings=[
+        args = {}
+        args["ImageId"] = self.config["ImageId"]
+        args["InstanceType"] = self.args.instance_type
+        if self.config["Key"]:
+            args["KeyName"] = self.config["Key"]
+        args["SecurityGroupIds"] = [docker_sg, efs_sg]
+        args["SubnetId"] = self.config["SubnetIds"][0]
+        args["MinCount"] = 1
+        args["MaxCount"] = 1
+        args["UserData"] = bootstrap_script
+        args["BlockDeviceMappings"] = [
                 {
                     "DeviceName": "/dev/xvda",
                     "Ebs": {
-                        "VolumeSize": 400
+                        "VolumeSize": self.config["EBSVolumeSize"]
                     }
                 }
             ]
-        )
+        
+        response = self.ec2_client.run_instances(**args)
         instance_id = response['Instances'][0]['InstanceId']
         instance_dns = response['Instances'][0]['PrivateDnsName']
         logging.info(f"Successfully launched instance {instance_id} with private DNS {instance_dns}")
@@ -148,8 +160,13 @@ class Commands():
             time.sleep(retry_wait)
             IsHealthy = ping_host(instance_dns, port)
             retries += 1
-            
-        assert IsHealthy, "Failed to establish connection with docker daemon on DockerHost instance. Please make sure to terminate instance manually. Aborting."
+        
+        if not IsHealthy:
+            print("Failed to establish connection with docker daemon on DockerHost instance. Terminating instance")
+            logging.info("Failed to establish connection with docker daemon on DockerHost instance. Terminating instance")
+            self.terminate_current_host()
+        
+        assert IsHealthy, "Aborting."
         
         print("Docker host is ready!")
         active_host = {
@@ -170,5 +187,8 @@ class Commands():
         return instance_id, instance_dns, port
     
     def run(self):
-        commands = {"create-host": self.create_host}
+        commands = {
+            "create-host": self.create_host,
+            "terminate-current-host": self.terminate_current_host
+        }
         commands[self.args.func]()
