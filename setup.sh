@@ -9,8 +9,10 @@ then
     if [[ $EUID != 0 ]]
     then
         sudo ln -s $PWD/src/sdocker/sdocker /usr/bin/sdocker
+        sudo chmod +x $PWD/src/sdocker/sdocker
     else
         ln -s $PWD/src/sdocker/sdocker /usr/bin/sdocker
+        chmod +x $PWD/src/sdocker/sdocker
     fi
 fi
 

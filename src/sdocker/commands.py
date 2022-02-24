@@ -1,11 +1,11 @@
 import botocore
-import logging
+import logging as log
 import boto3
 import requests
 import json
 import time
 import os
-from config import get_home, ReadFromFile
+from config import get_home, ReadFromFile, UnhandledError
 
 port = 1111
 retry_wait = 5
@@ -13,42 +13,75 @@ timeout = 720
 max_retries = 720 // retry_wait
 
 def ping_host(dns, port, retry=True):
+    """
+    Check Docker host health by requesting /version from docker daemon on host
+    """
     try:
-        logging.info(f"Pinging {dns}")
+        log.info(f"Pinging {dns}")
         response = requests.get(f"http://{dns}:{port}/version")
-        logging.info(f"DockerHost {dns} is healthy!")
+        log.info(f"DockerHost {dns} is healthy!")
         return True
-    except:
+    except Exception as error:
         if retry:
-            logging.error(f"Failed to reach {dns}, retrying in {retry_wait}s")
+            log.error(f"Failed to reach {dns}, retrying in {retry_wait}s")
         else:
-            logging.error(f"Failed to reach {dns}")
+            log.error(f"Failed to reach {dns}, with error message {error.message}")
         return False
 
+
 class Commands():
+    """
+    Class for sdocker commands
+    """
     def __init__(self, args, config):
+        """
+        Create ec2 client and passes args and config
+        """
+        commands = {
+            "create-host": self.create_host,
+            "terminate-current-host": self.terminate_current_host
+        }
         self.ec2_client = boto3.client("ec2", region_name=config["Region"])
         self.args = args
         self.config = config
-        
+        commands[self.args.func]()
+
+
     def create_sg(self, name, desc, source_sg, from_port, to_port):
-        
+        """
+        Creates security group if not found in VPC
+        """
         sg_exist = False
-        logging.info(f"Checking {name} security group exists")
+        log.info(f"Checking {name} security group exists")
         try:
             check_response= self.ec2_client.describe_security_groups(
-                GroupNames=[name]
+                Filters=[
+                    {
+                        "Name": "group-name",
+                        "Values": [name]
+                    },
+                    {
+                        "Name": "vpc-id",
+                        "Values": [self.config["VpcId"]]
+                    }
+                ]
             )
-            sg_exist = True
-            logging.info(f"Found {name} security group {check_response['SecurityGroups'][0]['GroupId']}")
+            if len(check_response['SecurityGroups']) > 0:
+                sg_exist = True
+                log.info(f"Found {name} security group {check_response['SecurityGroups'][0]['GroupId']}")
+            else:
+                log.info(f"Security group {name} not found")
         except botocore.exceptions.ClientError as error:
             if error.response["Error"]["Code"] == "InvalidGroup.NotFound":
+                log.info(f"Security group {name} not found, 'ClientError' was raised")
                 sg_exist = False
             else:
-                raise error
+                UnhandledError(error)
+        except Exception as error:
+            UnhandledError(error)
                 
         if not sg_exist:
-            logging.info(f"Creating {name} security group")
+            log.info(f"Creating {name} security group")
             try:
                 response = self.ec2_client.create_security_group(
                     Description=desc,
@@ -71,36 +104,55 @@ class Commands():
                         },
                     ]
                 )
-                logging.info(f"Security Group id: {response['GroupId']}")
+                log.info(f"Security Group id: {response['GroupId']}")
             except botocore.exceptions.ClientError as error:
                 if error.response["Error"]["Code"] != "InvalidGroup.Duplicate":
-                    raise errorß
+                    UnhandledError(error)
+            except Exception as error:
+                UnhandledError(error)
             sg = response["GroupId"]
         else:
             sg = check_response['SecurityGroups'][0]["GroupId"]
         return sg
-    
+
+
     def prepare_efs(self, sg):
+        """
+        Adds mount target to EFS
+        """
         if sg not in self.config["MountTargetSecurityGroups"]:
-            response = self.config["EFSClient"].modify_mount_target_security_groups(
-                MountTargetId=self.config["MountTargetId"],
-                SecurityGroups=[*self.config["MountTargetSecurityGroups"], sg]
-            )
-    
+            try:
+                response = self.config["EFSClient"].modify_mount_target_security_groups(
+                    MountTargetId=self.config["MountTargetId"],
+                    SecurityGroups=[*self.config["MountTargetSecurityGroups"], sg]
+                )
+            except Exception as error:
+                UnhandledError(error)
+
+
     def terminate_current_host(self):
+        """
+        Terminate Docker Host command
+        """
         home = get_home()
         sdocker_host_filename = f"{home}/.sdocker/sdocker-hosts.conf"
         sdocker_host_config = ReadFromFile(sdocker_host_filename)
-        response = self.ec2_client.terminate_instances(
-            InstanceIds=[sdocker_host_config["ActiveHosts"][0]["InstanceId"]]
-        )
+        try:
+            response = self.ec2_client.terminate_instances(
+                InstanceIds=[sdocker_host_config["ActiveHosts"][0]["InstanceId"]]
+            )
+        except Excpetion as error:
+            UnhandledError(error)
         instance_id = sdocker_host_config["ActiveHosts"][0]["InstanceId"]
         instance_dns = sdocker_host_config["ActiveHosts"][0]["InstanceDns"]
         print(f"Successfully terminated instance {instance_id} with private DNS {instance_dns}")
-        logging.info(f"Successfully terminated instance {instance_id} with private DNS {instance_dns}")
+        log.info(f"Successfully terminated instance {instance_id} with private DNS {instance_dns}")
+
 
     def create_host(self):
-        
+        """
+        Create Docker Host command
+        """
         home = get_home()
         docker_sg = self.create_sg(
             "DockerHost",
@@ -147,11 +199,13 @@ class Commands():
                     }
                 }
             ]
-        
-        response = self.ec2_client.run_instances(**args)
+        try:
+            response = self.ec2_client.run_instances(**args)
+        except Exception as error:
+            UnhandledError(error)
         instance_id = response['Instances'][0]['InstanceId']
         instance_dns = response['Instances'][0]['PrivateDnsName']
-        logging.info(f"Successfully launched instance {instance_id} with private DNS {instance_dns}")
+        log.info(f"Successfully launched instance {instance_id} with private DNS {instance_dns}")
         print(f"Successfully launched DockerHost on instance {instance_id} with private DNS {instance_dns}")
         print("Waiting on docker host to be ready")
         IsHealthy = False
@@ -163,7 +217,7 @@ class Commands():
         
         if not IsHealthy:
             print("Failed to establish connection with docker daemon on DockerHost instance. Terminating instance")
-            logging.info("Failed to establish connection with docker daemon on DockerHost instance. Terminating instance")
+            log.error("Failed to establish connection with docker daemon on DockerHost instance. Terminating instance")
             self.terminate_current_host()
         
         assert IsHealthy, "Aborting."
@@ -180,15 +234,11 @@ class Commands():
             ]
         }
         home = get_home()
-        with open(f"{home}/.sdocker/sdocker-hosts.conf", "w") as file:
-            json.dump(active_host, file)
-        os.system(f"docker context create {instance_dns} --docker host=tcp://{instance_dns}:{port}")
-        os.system(f"docker context use {instance_dns}")
+        try:
+            with open(f"{home}/.sdocker/sdocker-hosts.conf", "w") as file:
+                json.dump(active_host, file)
+            os.system(f"docker context create {instance_dns} --docker host=tcp://{instance_dns}:{port}")
+            os.system(f"docker context use {instance_dns}")
+        except Exception as error:
+            UnhandledError(error)
         return instance_id, instance_dns, port
-    
-    def run(self):
-        commands = {
-            "create-host": self.create_host,
-            "terminate-current-host": self.terminate_current_host
-        }
-        commands[self.args.func]()

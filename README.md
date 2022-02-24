@@ -13,12 +13,17 @@ Helper application to setup Docker Host on SageMaker Studio
   ec2:RunInstances
   ec2:TerminateInstances
   ec2:DescribeInstances
+  ec2:DescribeImages
   ec2:DescribeSecurityGroups
   ec2:DescribeNetworkInterfaces
   ec2:DescribeNetworkInterfaceAttribute
   ec2:CreateSecurityGroup
   ec2:AuthorizeSecurityGroupIngress
   ```
+- Docker
+- Docker compose (required for `local mode`)
+- Python 3
+- Boto3
 ## Setup
 Setup is staightforward, you clone this repo and then run `./setup.sh`:
 ```
@@ -29,7 +34,7 @@ $ ./setup.sh
 `setup.sh` will do the following:
 - Create `~/.sdocker` directory
 - Setup softlink for `sdocker` to make it possible to run it from anywhere from command line
-- Install `docker` and `docker-compose`
+- Install `docker` and `docker-compose` (requires `wget` to be installed on system)
 - Create `~/temp` directory used in `local mode`
 - Create `config.yaml` to change temporay directory to `~/temp`
 - Install branch `remote_docker_host` from SageMaker Python SDK which introduces Remote Docker Host capability (see [PR 2864](https://github.com/aws/sagemaker-python-sdk/pull/2864)). This is a temporary workaround until branch is merged with main.
@@ -50,7 +55,7 @@ $ aws ec2 describe-images --region <region> --owners amazon --filters "Name=name
 ```
 For more information on how to create an EC2 key pair check this [link](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-key-pairs.html#having-ec2-create-your-key-pair)
 
-An example of a valid configuration file is shown below:
+An example of a valid configuration `~/.sdocker/sdocker.conf` file is shown below:
 ```
 {
     "ImageId": "ami-052783664d99ae241",
@@ -90,8 +95,8 @@ $ sdocker terminate-current-host
 ```
 Otherwise, you will need to terminate the instance manually.
 ## Troubleshooting
-- To troubleshoot issues where instance was provisioned but stayed `Unhealthy`, check EC2 console logs for `bootstrap` script logs.
-- Pemission issues will show on `stdout` in runtime.
+- Consult `~/.sdocker/sdocker.log` for `sdocker` logs.
+- To troubleshoot issues related to host instance (eg. `Unhealthy` host), check AWS EC2 console logs for `bootstrap` script logs.
 
 ## Notes
 - `sdocker` does not terminate or stop EC2 instance after it created, always make sure you have terminated unused instances when you are done.

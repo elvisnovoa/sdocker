@@ -1,9 +1,12 @@
 import argparse
-import logging
 
 class ParseArgs():
+    """
+    Parsing Arguments class
+    """
     def __init__(self):
-
+        """
+        """
         parser = argparse.ArgumentParser(prog="sdocker")
         commands = [
             "create-host",
