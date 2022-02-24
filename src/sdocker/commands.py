@@ -221,7 +221,7 @@ class Commands():
             print("Failed to establish connection with docker daemon on DockerHost instance. Terminating instance")
             log.error("Failed to establish connection with docker daemon on DockerHost instance. Terminating instance")
             log.error(f"Not able to reach docker daemon on host: {IsHealthy[1]}")
-            self.terminate_current_host(self.instance_id)
+            self.terminate_current_host(instance_id)
         
         assert IsHealthy[0], "Aborting."
         
