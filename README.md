@@ -1,7 +1,7 @@
 # Sdocker - Docker integration for SageMaker Studio
 Helper application to setup Docker Host on SageMaker Studio
 ## Prerequsites
-- SageMaker Studio setup in `VPCOnly` mode
+- SageMaker Studio setup in `VPCOnly` mode, and VPC has DNS hostnames and DNS resolution options enabled.
 - Execution role for Studio with the below permissions:
   ```
   sagemaker:DescribeDomain
