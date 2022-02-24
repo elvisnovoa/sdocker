@@ -8,10 +8,10 @@ import logging
 
 if __name__ == "__main__":
     home = get_home()
-    logging.basicConfig(format='%(asctime)s %(levelname)-8s [%(filename)s:%(lineno)d]: %(message)s',
+    logging.basicConfig(format='%(asctime)s %(levelname)s [%(filename)s:%(lineno)d]: %(message)s',
                         datefmt='%m/%d/%Y %H:%M:%S',
                         filename=f'{home}/.sdocker/sdocker.log',
                         level=logging.INFO)
     args, parser = (ParseArgs().args, ParseArgs().parser)
     config = ReadConfig().config
-    Commands(args, config).run()
+    Commands(args, config)

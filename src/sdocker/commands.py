@@ -20,13 +20,13 @@ def ping_host(dns, port, retry=True):
         log.info(f"Pinging {dns}")
         response = requests.get(f"http://{dns}:{port}/version")
         log.info(f"DockerHost {dns} is healthy!")
-        return True
+        return (True, None)
     except Exception as error:
         if retry:
             log.error(f"Failed to reach {dns}, retrying in {retry_wait}s")
         else:
             log.error(f"Failed to reach {dns}, with error message {error.message}")
-        return False
+        return (False, error)
 
 
 class Commands():
@@ -130,16 +130,18 @@ class Commands():
                 UnhandledError(error)
 
 
-    def terminate_current_host(self):
+    def terminate_current_host(self, instance_id=None):
         """
         Terminate Docker Host command
         """
         home = get_home()
         sdocker_host_filename = f"{home}/.sdocker/sdocker-hosts.conf"
-        sdocker_host_config = ReadFromFile(sdocker_host_filename)
         try:
+            if not instance_id:
+                sdocker_host_config = ReadFromFile(sdocker_host_filename)
+                instance_id = sdocker_host_config["ActiveHosts"][0]["InstanceId"]
             response = self.ec2_client.terminate_instances(
-                InstanceIds=[sdocker_host_config["ActiveHosts"][0]["InstanceId"]]
+                InstanceIds=[instance_id]
             )
         except Excpetion as error:
             UnhandledError(error)
@@ -208,19 +210,20 @@ class Commands():
         log.info(f"Successfully launched instance {instance_id} with private DNS {instance_dns}")
         print(f"Successfully launched DockerHost on instance {instance_id} with private DNS {instance_dns}")
         print("Waiting on docker host to be ready")
-        IsHealthy = False
+        IsHealthy = (False, "")
         retries = 0
-        while not IsHealthy and retries < max_retries:
+        while not IsHealthy[0] and retries < max_retries:
             time.sleep(retry_wait)
             IsHealthy = ping_host(instance_dns, port)
             retries += 1
         
-        if not IsHealthy:
+        if not IsHealthy[0]:
             print("Failed to establish connection with docker daemon on DockerHost instance. Terminating instance")
             log.error("Failed to establish connection with docker daemon on DockerHost instance. Terminating instance")
-            self.terminate_current_host()
+            log.error(f"Not able to reach docker daemon on host: {IsHealthy[1]}")
+            self.terminate_current_host(self.instance_id)
         
-        assert IsHealthy, "Aborting."
+        assert IsHealthy[0], "Aborting."
         
         print("Docker host is ready!")
         active_host = {

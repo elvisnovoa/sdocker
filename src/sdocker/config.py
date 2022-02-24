@@ -52,7 +52,8 @@ class ReadConfig():
             self.config["VPCOnly"] = False
         self.config["Region"] = os.environ.get("REGION_NAME")
         
-        log.error("SageMaker Studio Domain must be in \"VPCOnly mode\".")
+        if not self.config["VPCOnly"]:
+            log.error("SageMaker Studio Domain must be in \"VPCOnly mode\".")
         assert self.config["VPCOnly"], "SageMaker Studio Domain must be in \"VPCOnly mode\"."
         
         sm_client = boto3.client("sagemaker", region_name=self.config["Region"])
@@ -115,7 +116,7 @@ class ReadConfig():
     
 
 def UnhandledError(error):
-    log.error(f"Unhandled Exception: {error.message}")
-    log.exception("message")
+    log.error(f"Unhandled Exception: {error}")
+    log.exception()
     raise error
         
