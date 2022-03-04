@@ -99,7 +99,7 @@ Otherwise, you will need to terminate the instance manually.
 - To troubleshoot issues related to host instance (eg. `Unhealthy` host), check AWS EC2 console logs for `bootstrap` script logs.
 
 ## Notes
-- `sdocker` does not terminate or stop EC2 instance after it created, always make sure you have terminated unused instances when you are done.
+- `sdocker` does not terminate or stop EC2 instance after it created, always make sure you have terminated unused instances when you are done. You can use `terminate-current-host` command to terminate the current host.
 - Networking is setup between *Docker Host*, *SageMaker Studio* and *EFS* using two *Security Groups* (listed below), it is recommended to deleted these when you create new *SageMaker Studio Domain* so `sdocker` can create new ones that are setup correctly:
   - `DockerHost`
   - `EFSDockerHost`
