@@ -1,5 +1,14 @@
 # Sdocker - Docker integration for SageMaker Studio
 Helper application to setup Docker Host on SageMaker Studio
+
+## How SDocker works
+`sdocker` provision an EC2 instance that is use as a remote docker host that is running docker daemon. `sdocker` does the following:
+- Setup networking and security groups between the instance and SageMaker Studio Apps and EFS
+- Provision EC2 instance
+- Mount SageMaker Studio EFS on EC2 instance
+- Run a `docker:dind` image as Host docker daemon and open map port 1111 to allow access to docker daemon.
+- Create docker context on the client to connect to docker host
+
 ## Prerequsites
 - SageMaker Studio setup in `VPCOnly` mode, and VPC has DNS hostnames and DNS resolution options enabled.
 - Execution role for Studio with the below permissions:
@@ -24,6 +33,7 @@ Helper application to setup Docker Host on SageMaker Studio
 - Docker compose (required for `local mode`)
 - Python 3
 - Boto3
+
 ## Setup
 Setup is staightforward, you clone this repo and then run `./setup.sh`:
 ```
@@ -38,13 +48,6 @@ $ ./setup.sh
 - Create `~/temp` directory used in `local mode`
 - Create `config.yaml` to change temporay directory to `~/temp`
 - Install branch `remote_docker_host` from SageMaker Python SDK which introduces Remote Docker Host capability (see [PR 2864](https://github.com/aws/sagemaker-python-sdk/pull/2864)). This is a temporary workaround until branch is merged with main.
-## How SDocker works
-`sdocker` provision an EC2 instance that is use as a remote docker host that is running docker daemon. `sdocker` does the following:
-- Setup networking and security groups between the instance and SageMaker Studio Apps and EFS
-- Provision EC2 instance
-- Mount SageMaker Studio EFS on EC2 instance
-- Run a `docker:dind` image as Host docker daemon and open map port 1111 to allow access to docker daemon.
-- Create docker context on the client to connect to docker host
 
 ## Configuration
 `sdocker` can be configured to choose a different *AMI*, include EC2 key pair and customize root EBS volume size. Configuration file location is  `~/.sdocker/sdocker.conf`.
