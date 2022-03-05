@@ -10,7 +10,8 @@ Helper application to setup Docker Host on SageMaker Studio
 - Create docker context on the client to connect to docker host
 
 ## Prerequsites
-- SageMaker Studio setup in `VPCOnly` mode, and VPC has DNS hostnames and DNS resolution options enabled.
+- SageMaker Studio setup in `VPCOnly` mode.
+- VPC has `DNS hostnames` and `DNS resolution` options enabled.
 - Execution role for Studio with the below permissions:
   ```
   sagemaker:DescribeDomain
