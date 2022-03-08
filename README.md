@@ -1,5 +1,5 @@
 # Sdocker - Docker integration for SageMaker Studio
-Helper application to setup Docker Host on SageMaker Studio
+Helper application to automate setting up `local mode` and `docker` for SageMaker Studio
 
 ## How SDocker works
 `sdocker` provision an EC2 instance that is use as a remote docker host that is running docker daemon. `sdocker` does the following:
