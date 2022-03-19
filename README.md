@@ -48,8 +48,7 @@ $ ./setup.sh
 - Install `docker` and `docker-compose` (requires `wget` to be installed on system)
 - Create `~/temp` directory used in `local mode`
 - Create `config.yaml` to change temporay directory to `~/temp`
-- Install branch `remote_docker_host` from SageMaker Python SDK which introduces Remote Docker Host capability (see [PR 2864](https://github.com/aws/sagemaker-python-sdk/pull/2864)). This is a temporary workaround until branch is merged with main.
-
+- Install SageMaker Python SDK v2.80.0 or higher which introduces Remote Docker Host capability (see [PR 2864](https://github.com/aws/sagemaker-python-sdk/pull/2864)).
 ## Configuration
 `sdocker` can be configured to choose a different *AMI*, include EC2 key pair and customize root EBS volume size. Configuration file location is  `~/.sdocker/sdocker.conf`.
 Make sure your *AMI* has docker daemon installed and running by default. It is only tested on `Amazon linux 2` instances. We recommend using *AWS Deep Learning Base AMI (Amazon Linux 2).*. You can use below ASW CLI command to find latest AWS Deep learning AMI ID:
