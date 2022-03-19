@@ -42,6 +42,7 @@ $ git clone https://github.com/samdwar1976/sdocker.git
 $ cd sdocker
 $ ./setup.sh
 ```
+When running `setup.sh` from terminal of `KernalGateway`, make sure to activate your conda environment first.
 `setup.sh` will do the following:
 - Create `~/.sdocker` directory
 - Setup softlink for `sdocker` to make it possible to run it from anywhere from command line

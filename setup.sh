@@ -36,4 +36,4 @@ mkdir -p ~/.sagemaker
 echo -e "local:\n    container_root: $HOME/temp" > ~/.sagemaker/config.yaml
 mkdir -p ~/temp
 
-python3 -m pip install git+https://github.com/samdwar1976/sagemaker-python-sdk.git@remote_docker_host
+python3 -m pip install "sagemaker>=2.80.0"
