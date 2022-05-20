@@ -202,7 +202,7 @@ class Commands():
                 }
             ]
         self.config["Tags"].append({"Key": "Name", "Value": "DockerHost"})
-        args["TagSpecifications"] = [{"Tags": self.config["Tags"]}]
+        args["TagSpecifications"] = [{"Tags": self.config["Tags"], "ResourceType": "instance"}]
         try:
             response = self.ec2_client.run_instances(**args)
         except Exception as error:
