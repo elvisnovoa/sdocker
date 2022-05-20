@@ -201,6 +201,8 @@ class Commands():
                     }
                 }
             ]
+        self.conf["Tags"].append({"Key": "Name", "Value": "DockerHost"})
+        args["TagSpecifications"] = [{"Tags": self.conf["Tags"]}]
         try:
             response = self.ec2_client.run_instances(**args)
         except Exception as error:
