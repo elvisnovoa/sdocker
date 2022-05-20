@@ -36,6 +36,7 @@ Helper application to automate setting up `local mode` and `docker` for SageMake
 - Boto3
 
 ## Setup
+### Manual Setup
 Setup is staightforward, you clone this repo and then run `./setup.sh`:
 ```
 $ git clone https://github.com/samdwar1976/sdocker.git
@@ -50,6 +51,36 @@ When running `setup.sh` from terminal of `KernalGateway`, make sure to activate 
 - Create `~/temp` directory used in `local mode`
 - Create `config.yaml` to change temporay directory to `~/temp`
 - Install SageMaker Python SDK v2.80.0 or higher which introduces Remote Docker Host capability (see [PR 2864](https://github.com/aws/sagemaker-python-sdk/pull/2864)).
+### Setup via Studio LifeCycle Configuration script
+1- Create Studio LifeCycle script
+```
+#!/bin/bash
+
+set -ex
+
+git clone https://github.com/samdwar1976/sdocker.git
+
+cd sdocker
+
+nohup ./setup.sh
+```
+2- Encode script content to `base64` encoding using below command:
+```
+$  LCC_CONTENT=`openssl base64 -A -in <LifeCycle script file>`
+```
+3- Create Studio LifeCycle config from environment variable `LCC_CONTENT`
+```
+$ aws sagemaker create-studio-lifecycle-config --studio-lifecycle-config-name sdocker --studio-lifecycle-config-content $LCC_CONTENT --studio-lifecycle-config-app-type KernelGateway
+```
+4- Update Studio domain to add LCC to default user settings (optional)
+```
+$ aws sagemaker update-domain --domain-id <domain-id> --default-user-settings '{"KernelGatewayAppSettings": {"DefaultResourceSpec": {"InstanceType": "<default instance type>", "LifecycleConfigArn": "arn:aws:sagemaker:<region>:<AWS account ID>:studio-lifecycle-config/sdocker"}}}'
+```
+5- Update user profile settings
+```
+$ aws sagemaker update-user-profile --domain-id <domain-id> --user-profile-name <user profile> --user-settings '{"KernelGatewayAppSettings": {"DefaultResourceSpec": {"InstanceType": "ml.t3.medium", "LifecycleConfigArn": "arn:aws:sagemaker:<region>:<AWS account ID>:studio-lifecycle-config/sdocker"}, "LifecycleConfigArns": ["arn:aws:sagemaker:<region>:<AWS account ID>:studio-lifecycle-config/sdocker"]}}'
+```
+6- Delete JupyterServer app and create a new one for the above to take effect
 ## Configuration
 `sdocker` can be configured to choose a different *AMI*, include EC2 key pair and customize root EBS volume size. Configuration file location is  `~/.sdocker/sdocker.conf`.
 Make sure your *AMI* has docker daemon installed and running by default. It is only tested on `Amazon linux 2` instances. We recommend using *AWS Deep Learning Base AMI (Amazon Linux 2).*. You can use below ASW CLI command to find latest AWS Deep learning AMI ID:
