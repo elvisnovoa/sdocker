@@ -55,14 +55,11 @@ When running `setup.sh` from terminal of `KernalGateway`, make sure to activate 
 1- Create Studio LifeCycle script
 ```
 #!/bin/bash
-
 set -ex
 
 git clone https://github.com/samdwar1976/sdocker.git
-
 cd sdocker
-
-nohup ./setup.sh
+nohup ./setup.sh > docker_setup.out 2>&1 &
 ```
 2- Encode script content to `base64` encoding using below command:
 ```
