@@ -23,6 +23,7 @@ Helper application to automate setting up `local mode` and `docker` for SageMake
   ec2:RunInstances
   ec2:TerminateInstances
   ec2:DescribeInstances
+  ec2:DescribeInstanceTypes
   ec2:DescribeImages
   ec2:DescribeSecurityGroups
   ec2:DescribeNetworkInterfaces

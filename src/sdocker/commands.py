@@ -171,6 +171,12 @@ class Commands():
             2049
         )
         self.prepare_efs(efs_sg)
+        docker_image_name = "docker:dind"
+        gpu_option = ""
+        if "GpuInfo" in self.ec2_client.describe_instance_types(InstanceTypes=[self.args.instance_type])['InstanceTypes'][0].keys():
+            # https://stackoverflow.com/a/71866959/18516713
+            docker_image_name = "brandsight/dind:nvidia-docker"
+            gpu_option = "--gpus all"
         bootstrap_script = f"""#!/bin/bash
         set -ex
         exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1
@@ -181,7 +187,7 @@ class Commands():
                 {self.config['EfsIpAddress']}:/{self.config['UserUid']} \
                 {home}
 
-            sudo -u ec2-user docker run -d -p {port}:2375 -p 8080:8080 -v {home}:{home} --privileged --name dockerd-server -e DOCKER_TLS_CERTDIR="" docker:dind
+            sudo -u ec2-user docker run -d -p {port}:2375 -p 8080:8080 {gpu_option} -v {home}:{home} --privileged --name dockerd-server -e DOCKER_TLS_CERTDIR="" {docker_image_name}
         """
         args = {}
         args["ImageId"] = self.config["ImageId"]
