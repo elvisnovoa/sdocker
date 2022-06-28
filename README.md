@@ -94,7 +94,7 @@ An example of a valid configuration `~/.sdocker/sdocker.conf` file is shown belo
 {
     "ImageId": "ami-052783664d99ae241",
     "Key": "docker-key",
-    "EBSVOlumeSize": 500
+    "EBSVolumeSize": 500
 }
 ```
 ## Usage
