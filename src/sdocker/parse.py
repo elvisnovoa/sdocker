@@ -14,7 +14,8 @@ class ParseArgs():
         ]
         sub_args = {
             "create-host": [
-                ("--instance-type", True)
+                ("--instance-type", True),
+                ("--subnet-id", False)
             ],
             "terminate-current-host": []
         }

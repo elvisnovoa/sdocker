@@ -156,6 +156,15 @@ class Commands():
         Create Docker Host command
         """
         home = get_home()
+        if self.args.subnet_id:
+            if self.args.subnet_id in self.config["SubnetIds"]:
+                self.config["SubnetId"] = self.args.subnet_id
+            else:
+                message = f"InvalidSubnetId: {self.args.subnet_id} is either invalid subnet id or not part of {self.config['VpcId']}"
+                log.error(message)
+                raise ValueError(message)
+        else:
+            self.config["SubnetId"] = self.config["SubnetIds"][0]
         docker_sg = self.create_sg(
             "DockerHost",
             "Docker host security group",
@@ -195,7 +204,7 @@ class Commands():
         if self.config["Key"]:
             args["KeyName"] = self.config["Key"]
         args["SecurityGroupIds"] = [docker_sg, efs_sg]
-        args["SubnetId"] = self.config["SubnetIds"][0]
+        args["SubnetId"] = self.config["SubnetId"]
         args["MinCount"] = 1
         args["MaxCount"] = 1
         args["UserData"] = bootstrap_script

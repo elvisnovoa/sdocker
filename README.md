@@ -10,7 +10,7 @@ Helper application to automate setting up `local mode` and `docker` for SageMake
 - Create docker context on the client to connect to docker host
 
 ## Prerequsites
-- SageMaker Studio setup in `VPCOnly` mode.
+- SageMaker Studio setup in `VPCOnly` mode (`PublicInternetOnly` mode is not supported.
 - VPC has `DNS hostnames` and `DNS resolution` options enabled.
 - Execution role for Studio with the below permissions:
   ```
@@ -102,8 +102,9 @@ An example of a valid configuration `~/.sdocker/sdocker.conf` file is shown belo
 $ sdocker [COMMANDS][OPTIONS]
 
 Where [COMMANDS] can be:
-    create-host: Create security groups `DockerHost` and `EFSDockerHost`, then provision EC2 Docker Host. Takes one required [OPTIONS]:
-        --instance-type <instance-type>
+    create-host: Create security groups `DockerHost` and `EFSDockerHost`, then provision EC2 Docker Host. Takes the below [OPTIONS]:
+        --instance-type <instance-type> *[REQUIRED]*
+        --subnet-id <subnet-id>
     
     terminate-current-host: Terminates current host, this will only work if creation was successful. Takes no [OPTIONS]
 ```
