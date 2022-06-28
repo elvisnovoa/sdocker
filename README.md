@@ -100,14 +100,14 @@ An example of a valid configuration `~/.sdocker/sdocker.conf` file is shown belo
 ## Usage
 ```
 $ sdocker [COMMANDS][OPTIONS]
-
-Where [COMMANDS] can be:
-    create-host: Create security groups `DockerHost` and `EFSDockerHost`, then provision EC2 Docker Host. Takes the below [OPTIONS]:
-        --instance-type <instance-type> *[REQUIRED]*
-        --subnet-id <subnet-id>
-    
-    terminate-current-host: Terminates current host, this will only work if creation was successful. Takes no [OPTIONS]
 ```
+Where `[COMMANDS]` can be:
+* `create-host`: Create security groups `DockerHost` and `EFSDockerHost`, then provision EC2 Docker Host. Takes the below `[OPTIONS]`:
+  * `--instance-type` <instance-type> *[REQUIRED]*
+  * `--subnet-id` <subnet-id>
+    
+* `terminate-current-host`: Terminates current host, this will only work if creation was successful. Takes no `[OPTIONS]`
+
 ## Examples
 Below example creates a docker host using `c5.xlarge` instance type:
 ```
