@@ -9,13 +9,13 @@ then
     if [[ $EUID != 0 ]]
     then
         sudo ln -s $PWD/src/sdocker/sdocker /usr/bin/sdocker
-        if [[ -x  "$PWD/src/sdocker/sdocker" ]]
+        if [[ ! -x  "$PWD/src/sdocker/sdocker" ]]
         then
             sudo chmod +x $PWD/src/sdocker/sdocker
         fi
     else
         ln -s $PWD/src/sdocker/sdocker /usr/bin/sdocker
-        if [[ -x  "$PWD/src/sdocker/sdocker" ]]
+        if [[ ! -x  "$PWD/src/sdocker/sdocker" ]]
         then
             chmod +x $PWD/src/sdocker/sdocker
         fi
