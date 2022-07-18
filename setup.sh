@@ -18,9 +18,15 @@ fi
 
 if [[ `command -v docker` == "" ]]
 then
-    wget https://get.docker.com/ -O installer.sh
-    chmod +x installer.sh
-    ./installer.sh
+    if [[ "$(. /etc/os-release && echo "$ID")" == "amzn" ]]
+    then
+        sudo yum update -y & sudo yum upgrade -y
+        sudo yum install -y docker
+    else
+        wget https://get.docker.com/ -O installer.sh
+        chmod +x installer.sh
+        ./installer.sh
+    fi
     if [[ `command -v docker` == "" ]]
     then
         echo "docker not installed, please refer on how to install docker CLI (https://docs.docker.com/get-docker/)."
