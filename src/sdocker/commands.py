@@ -144,6 +144,8 @@ class Commands():
             response = self.ec2_client.terminate_instances(
                 InstanceIds=[instance_id]
             )
+            os.system(f"docker context use default")
+            os.system(f"docker context rm {instance_id}")
         except Excpetion as error:
             UnhandledError(error)
         instance_id = sdocker_host_config["ActiveHosts"][0]["InstanceId"]
@@ -247,8 +249,8 @@ class Commands():
         try:
             with open(f"{home}/.sdocker/sdocker-hosts.conf", "w") as file:
                 json.dump(active_host, file)
-            os.system(f"docker context create {instance_dns} --docker host=tcp://{instance_dns}:{port}")
-            os.system(f"docker context use {instance_dns}")
+            os.system(f"docker context create {instance_id} --docker host=tcp://{instance_dns}:{port}")
+            os.system(f"docker context use {instance_id}")
         except Exception as error:
             UnhandledError(error)
         return instance_id, instance_dns, port
