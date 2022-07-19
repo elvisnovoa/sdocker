@@ -1,7 +1,26 @@
 def generate_bootstrap_script(home, efs_ip_address, port, user_uid, gpu_option, docker_image_name):
-    bootstrap_script = f"""#!/bin/bash
-    set -ex
-    exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1
+    bootstrap_script = f"""Content-Type: multipart/mixed; boundary="//"
+MIME-Version: 1.0
+
+--//
+Content-Type: text/cloud-config; charset="us-ascii"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment; filename="cloud-config.txt"
+
+#cloud-config
+cloud_final_modules:
+- [scripts-user, always]
+
+--//
+Content-Type: text/x-shellscript; charset="us-ascii"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment; filename="userdata.txt"
+
+#!/bin/bash
+set -x
+exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1
     
     echo "Mounting EFS to /root"
     
@@ -44,5 +63,6 @@ def generate_bootstrap_script(home, efs_ip_address, port, user_uid, gpu_option, 
         --name dockerd-server \
         -e DOCKER_TLS_CERTDIR="" {docker_image_name}
     fi
-    """
+--//--"""
+
     return bootstrap_script
