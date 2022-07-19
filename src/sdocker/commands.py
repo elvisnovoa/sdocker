@@ -6,6 +6,7 @@ import json
 import time
 import os
 from config import get_home, ReadFromFile, UnhandledError
+from bootstrap import generate_bootstrap_script
 
 port = 1111
 retry_wait = 5
@@ -186,18 +187,7 @@ class Commands():
             # https://stackoverflow.com/a/71866959/18516713
             docker_image_name = "brandsight/dind:nvidia-docker"
             gpu_option = "--gpus all"
-        bootstrap_script = f"""#!/bin/bash
-        set -ex
-        exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1
-        
-            sudo mkdir -p {home}
-            sudo mount -t nfs \
-                -o nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2 \
-                {self.config['EfsIpAddress']}:/{self.config['UserUid']} \
-                {home}
-
-            sudo -u ec2-user docker run -d -p {port}:2375 -p 8080:8080 {gpu_option} -v {home}:{home} --privileged --name dockerd-server -e DOCKER_TLS_CERTDIR="" {docker_image_name}
-        """
+        bootstrap_script = generate_bootstrap_script(home, self.config['EfsIpAddress'], port, self.config['UserUid'], gpu_option, docker_image_name)
         args = {}
         args["ImageId"] = self.config["ImageId"]
         args["InstanceType"] = self.args.instance_type
