@@ -40,7 +40,8 @@ class Commands():
         """
         commands = {
             "create-host": self.create_host,
-            "terminate-current-host": self.terminate_current_host
+            "terminate-current-host": self.terminate_current_host,
+            "terminate-host": self.terminate_host
         }
         self.ec2_client = boto3.client("ec2", region_name=config["Region"])
         self.args = args
@@ -129,6 +130,17 @@ class Commands():
                 )
             except Exception as error:
                 UnhandledError(error)
+    
+    def terminate_host(self):
+        instance_id = self.args.instance_id
+        try:
+            response = self.ec2_client.terminate_instances(
+                InstanceIds=[instance_id]
+            )
+            os.system(f"docker context use default")
+            os.system(f"docker context rm {instance_id}")
+        except Excpetion as error:
+            UnhandledError(error)
 
 
     def terminate_current_host(self, instance_id=None):

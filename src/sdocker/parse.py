@@ -10,14 +10,18 @@ class ParseArgs():
         parser = argparse.ArgumentParser(prog="sdocker")
         commands = [
             "create-host",
-            "terminate-current-host"
+            "terminate-current-host",
+            "terminate-host"
         ]
         sub_args = {
             "create-host": [
                 ("--instance-type", True),
                 ("--subnet-id", False)
             ],
-            "terminate-current-host": []
+            "terminate-current-host": [],
+            "terminate-host": [
+                ("--instance-id", True)
+            ]
         }
         command_parser = parser.add_subparsers(title="commands", dest=str(commands), required=True)
         arg_commands = {}
