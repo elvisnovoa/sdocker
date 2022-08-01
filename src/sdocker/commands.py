@@ -137,10 +137,11 @@ class Commands():
             response = self.ec2_client.terminate_instances(
                 InstanceIds=[instance_id]
             )
-            os.system(f"docker context use default")
-            os.system(f'docker context rm `docker context list -q | grep "{instance_id}"`')
         except Excpetion as error:
             UnhandledError(error)
+        finally:            
+            os.system(f"docker context use default")
+            os.system(f'docker context rm `docker context list -q | grep "{instance_id}"`')
 
 
     def terminate_current_host(self, instance_id=None):
@@ -156,10 +157,11 @@ class Commands():
             response = self.ec2_client.terminate_instances(
                 InstanceIds=[instance_id]
             )
-            os.system(f"docker context use default")
-            os.system(f'docker context rm `docker context list -q | grep "{instance_id}"`')
         except Excpetion as error:
             UnhandledError(error)
+        finally:            
+            os.system(f"docker context use default")
+            os.system(f'docker context rm `docker context list -q | grep "{instance_id}"`')
         instance_id = sdocker_host_config["ActiveHosts"][0]["InstanceId"]
         instance_dns = sdocker_host_config["ActiveHosts"][0]["InstanceDns"]
         print(f"Successfully terminated instance {instance_id} with private DNS {instance_dns}")
