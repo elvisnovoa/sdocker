@@ -30,6 +30,8 @@ Helper application to automate setting up `local mode` and `docker` for SageMake
   ec2:DescribeNetworkInterfaceAttribute
   ec2:CreateSecurityGroup
   ec2:AuthorizeSecurityGroupIngress
+  ec2:ModifyNetworkInterfaceAttribute
+  ec2:CreateTags
   ```
 - Docker
 - Docker compose (required for `local mode`)
