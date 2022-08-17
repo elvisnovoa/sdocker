@@ -100,6 +100,10 @@ class ReadConfig():
                 self.config["EBSVolumeSize"] = config_data["EBSVolumeSize"]
             else:
                 self.config["EBSVolumeSize"] = 400
+            if "InstanceProfileArn" in config_data.keys():
+                self.config["InstanceProfileArn"] = config_data["InstanceProfileArn"]
+            else:
+                self.config["InstanceProfileArn"] = None
             efs_client = boto3.client("efs", region_name=self.config["Region"])
             self.config["EFSClient"] = efs_client
             Efs_response = efs_client.describe_mount_targets(FileSystemId=self.config["EfsId"])

@@ -222,6 +222,10 @@ class Commands():
                     }
                 }
             ]
+        if self.config["InstanceProfileArn"]:
+            args["IamInstanceProfile"] = {
+                "Arn": self.config["InstanceProfileArn"]
+            }
         self.config["Tags"].append({"Key": "Name", "Value": "DockerHost"})
         args["TagSpecifications"] = [{"Tags": self.config["Tags"], "ResourceType": "instance"}]
         try:
