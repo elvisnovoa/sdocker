@@ -49,6 +49,7 @@ $ ./setup.sh
 When running `setup.sh` from terminal of `KernalGateway`, make sure to activate your conda environment first.
 `setup.sh` will do the following:
 - Create `~/.sdocker` directory
+- Create sample `~/.sdocker/pre-bootstrap.sh` and `~/.sdocker/post-bootstrap.sh` scripts
 - Setup softlink for `sdocker` to make it possible to run it from anywhere from command line
 - Install `docker` and `docker-compose` (requires `wget` to be installed on system)
 - Create `~/temp` directory used in `local mode`
@@ -102,9 +103,16 @@ An example of a valid configuration `~/.sdocker/sdocker.conf` file is shown belo
 {
     "ImageId": "ami-052783664d99ae241",
     "Key": "docker-key",
-    "EBSVolumeSize": 500
+    "EBSVolumeSize": 500,
+    "InstanceProfileArn": "arn:aws:iam::012345678910:instance-profile/some-profile-name",
+    "DockerImageURI": "docker:dind",
+    "DockerImageNvidiaURI": "brandsight/dind:nvidia-docker"
 }
 ```
+
+The `InstanceProfileArn` will be assigned to the EC2 Docker Host. This is useful in case you need to use [Systems Manager Session Manager](https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-getting-started.html). 
+The `DockerImageURI` and `DockerImageNvidiaURI` fields is useful if you need to access these docker images from a private registry.
+
 ## Usage
 ```
 $ sdocker [COMMANDS][OPTIONS]

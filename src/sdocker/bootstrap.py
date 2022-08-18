@@ -1,4 +1,4 @@
-def generate_bootstrap_script(home, efs_ip_address, port, user_uid, gpu_option, docker_image_name):
+def generate_bootstrap_script(home, efs_ip_address, port, user_uid, gpu_option, docker_image_name, pre_bootstrap, post_bootstrap):
     bootstrap_script = f"""Content-Type: multipart/mixed; boundary="//"
 MIME-Version: 1.0
 
@@ -21,7 +21,9 @@ Content-Disposition: attachment; filename="userdata.txt"
 #!/bin/bash
 set -x
 exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1
-    
+
+    {pre_bootstrap}
+
     echo "Mounting EFS to /root"
     
     sudo mkdir -p /root
@@ -63,6 +65,9 @@ exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1
         --name dockerd-server \
         -e DOCKER_TLS_CERTDIR="" {docker_image_name}
     fi
+    
+    {post_bootstrap}
+
 --//--"""
 
     return bootstrap_script

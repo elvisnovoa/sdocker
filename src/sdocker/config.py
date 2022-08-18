@@ -114,6 +114,14 @@ class ReadConfig():
                 MountTargetId=self.config["MountTargetId"]
             )
             self.config["MountTargetSecurityGroups"] = Mount_target_response["SecurityGroups"]
+            if "DockerImageURI" in config_data.keys():
+                self.config["DockerImageURI"] = config_data["DockerImageURI"]
+            else:
+                self.config["DockerImageURI"] = "docker:dind"
+            if "DockerImageNvidiaURI" in config_data.keys():
+                self.config["DockerImageNvidiaURI"] = config_data["DockerImageNvidiaURI"]
+            else:
+                self.config["DockerImageNvidiaURI"] = "brandsight/dind:nvidia-docker"
             log.debug(f"Resource: {self.config}")
         except Exception as error:
             UnhandledError(error)

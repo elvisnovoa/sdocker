@@ -137,7 +137,7 @@ class Commands():
             response = self.ec2_client.terminate_instances(
                 InstanceIds=[instance_id]
             )
-        except Excpetion as error:
+        except Exception as error:
             UnhandledError(error)
         finally:            
             os.system(f"docker context use default")
@@ -157,7 +157,7 @@ class Commands():
             response = self.ec2_client.terminate_instances(
                 InstanceIds=[instance_id]
             )
-        except Excpetion as error:
+        except Exception as error:
             UnhandledError(error)
         finally:            
             os.system(f"docker context use default")
@@ -167,6 +167,13 @@ class Commands():
         print(f"Successfully terminated instance {instance_id} with private DNS {instance_dns}")
         log.info(f"Successfully terminated instance {instance_id} with private DNS {instance_dns}")
 
+    def read_custom_script(self, script_path):
+        with open(script_path, "rb") as script:
+            readlines = script.readlines()
+            if readlines[0].decode().startswith("#!"):
+                readlines = readlines[1:]
+
+            return b"".join(readlines).decode().replace("\n", "\n    ")
 
     def create_host(self):
         """
@@ -197,13 +204,18 @@ class Commands():
             2049
         )
         self.prepare_efs(efs_sg)
-        docker_image_name = "docker:dind"
+        docker_image_name = self.config["DockerImageURI"]
         gpu_option = ""
         if "GpuInfo" in self.ec2_client.describe_instance_types(InstanceTypes=[self.args.instance_type])['InstanceTypes'][0].keys():
             # https://stackoverflow.com/a/71866959/18516713
-            docker_image_name = "brandsight/dind:nvidia-docker"
+            docker_image_name = self.config["DockerImageNvidiaURI"]
             gpu_option = "--gpus all"
-        bootstrap_script = generate_bootstrap_script(home, self.config['EfsIpAddress'], port, self.config['UserUid'], gpu_option, docker_image_name)
+
+        pre_bootstrap_script = self.read_custom_script(f"{home}/.sdocker/pre-bootstrap.sh")
+        post_bootstrap_script = self.read_custom_script(f"{home}/.sdocker/pre-bootstrap.sh")
+
+        bootstrap_script = generate_bootstrap_script(home, self.config['EfsIpAddress'], port, self.config['UserUid'], gpu_option, docker_image_name, pre_bootstrap_script, post_bootstrap_script)
+
         args = {}
         args["ImageId"] = self.config["ImageId"]
         args["InstanceType"] = self.args.instance_type
@@ -243,15 +255,15 @@ class Commands():
             time.sleep(retry_wait)
             IsHealthy = ping_host(instance_dns, port)
             retries += 1
-        
+
         if not IsHealthy[0]:
             print("Failed to establish connection with docker daemon on DockerHost instance. Terminating instance")
             log.error("Failed to establish connection with docker daemon on DockerHost instance. Terminating instance")
             log.error(f"Not able to reach docker daemon on host: {IsHealthy[1]}")
             self.terminate_current_host(instance_id)
-        
+
         assert IsHealthy[0], "Aborting."
-        
+
         print("Docker host is ready!")
         active_host = {
             "ActiveHosts": [

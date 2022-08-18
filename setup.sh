@@ -4,6 +4,32 @@ set -ex
 
 mkdir -p ~/.sdocker
 
+PRE_BOOTSTRAP_SCRIPT="$HOME/.sdocker/pre-bootstrap.sh"
+if [[ ! -f "$PRE_BOOTSTRAP_SCRIPT" ]]; then
+    echo "$PRE_BOOTSTRAP_SCRIPT does not exists."
+    touch $PRE_BOOTSTRAP_SCRIPT
+
+    cat <<EOT >> $PRE_BOOTSTRAP_SCRIPT
+#!/bin/bash
+# This script will execute before the rest of the bootstrap script.
+# ie. private docker registry login
+EOT
+
+fi
+
+POST_BOOTSTRAP_SCRIPT="$HOME/.sdocker/post-bootstrap.sh"
+if [[ ! -f "$POST_BOOTSTRAP_SCRIPT" ]]; then
+    echo "$POST_BOOTSTRAP_SCRIPT does not exists."
+    touch $POST_BOOTSTRAP_SCRIPT
+
+    cat <<EOT >> $POST_BOOTSTRAP_SCRIPT
+#!/bin/bash
+# This script will execute after the rest of the bootstrap script.
+# ie. clean up temporary files
+EOT
+
+fi
+
 if [[ `command -v /usr/bin/sdocker` == "" ]]
 then
     if [[ $EUID != 0 ]]
